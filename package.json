@@ -1,0 +1,16 @@
+{
+  "name": "zionstone-holdings",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev": "pnpm run dev:frontend & pnpm run dev:backend",
+    "build": "pnpm --filter frontend build && pnpm --filter backend build"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.0"
+  }
+}
