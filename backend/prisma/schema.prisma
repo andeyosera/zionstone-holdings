@@ -1,0 +1,174 @@
+// backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  
+}
+
+// ─── ENUMS ────────────────────────────────────────────────
+// Enums restrict a field to a fixed set of values.
+// This is enforced at the DATABASE level — not just in code.
+
+enum Role {
+  GUEST    // Can search and book properties
+  HOST     // Can list and manage properties
+  ADMIN    // Full platform access
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  VILLA
+  COTTAGE
+  STUDIO
+  GUESTHOUSE
+}
+
+enum BookingStatus {
+  PENDING    // Guest requested, awaiting host confirmation
+  CONFIRMED  // Host accepted
+  CANCELLED  // Either party cancelled
+  COMPLETED  // Stay finished
+  REJECTED   // Host declined
+}
+
+// ─── USER ────────────────────────────────────────────────
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  avatarUrl    String?
+  role         Role     @default(GUEST)
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations — these are NOT stored in the DB as columns.
+  // Prisma uses them to know how to JOIN tables.
+  properties   Property[]  // A user can host many properties
+  bookings     Booking[]   // A user can make many bookings
+  reviews      Review[]    // A user can write many reviews
+
+  @@map("users") // The actual table name in PostgreSQL
+}
+
+// ─── PROPERTY ────────────────────────────────────────────
+model Property {
+  id           String       @id @default(uuid())
+  hostId       String       // Foreign key — links to User.id
+  title        String
+  description  String
+  type         PropertyType
+  county       String       // e.g. "Kakamega"
+  town         String       // e.g. "Mumias", "Kakamega Town"
+  address      String
+  latitude     Float?
+  longitude    Float?
+  pricePerNight Decimal     @db.Decimal(10, 2) // Precise money — never use Float for money
+  maxGuests    Int
+  bedrooms     Int
+  bathrooms    Int
+  amenities    String[]     // PostgreSQL native array: ["WiFi", "Parking", "Kitchen"]
+  isPublished  Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  host         User              @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  images       PropertyImage[]
+  bookings     Booking[]
+  reviews      Review[]
+  availability Availability[]
+
+  @@map("properties")
+  @@index([county])         // Index for fast county-based searching
+  @@index([pricePerNight])  // Index for fast price filtering
+  @@index([hostId])         // Index for fast host lookup
+}
+
+// ─── PROPERTY IMAGE ──────────────────────────────────────
+// Separate table because a property can have many images.
+// Storing them as an array in Property would be wrong —
+// you can't query or reorder individual images efficiently.
+model PropertyImage {
+  id         String   @id @default(uuid())
+  propertyId String
+  url        String
+  caption    String?
+  isCover    Boolean  @default(false)
+  sortOrder  Int      @default(0)
+
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_images")
+  @@index([propertyId])
+}
+
+// ─── BOOKING ─────────────────────────────────────────────
+model Booking {
+  id              String        @id @default(uuid())
+  guestId         String
+  propertyId      String
+  checkIn         DateTime      @db.Date
+  checkOut        DateTime      @db.Date
+  totalPrice      Decimal       @db.Decimal(10, 2)
+  guestCount      Int
+  status          BookingStatus @default(PENDING)
+  specialRequests String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  guest    User     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  review   Review?  // A booking can have at most one review
+
+  @@map("bookings")
+  @@index([guestId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([checkIn, checkOut]) // Composite index for date range queries
+}
+
+// ─── REVIEW ──────────────────────────────────────────────
+model Review {
+  id         String   @id @default(uuid())
+  bookingId  String   @unique // One review per booking — enforced by DB
+  guestId    String
+  propertyId String
+  rating     Int      // 1–5, validated in application code
+  comment    String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  guest    User     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+  @@index([propertyId])
+}
+
+// ─── AVAILABILITY ────────────────────────────────────────
+// Hosts can block specific dates or set custom prices.
+// This is separate from bookings — a host can block a date
+// without having a booking (e.g. personal use, maintenance).
+model Availability {
+  id          String   @id @default(uuid())
+  propertyId  String
+  date        DateTime @db.Date
+  isAvailable Boolean  @default(true)
+  customPrice Decimal? @db.Decimal(10, 2)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, date]) // Can't have two availability records for same property+date
+  @@map("availability")
+  @@index([propertyId, date])
+}
