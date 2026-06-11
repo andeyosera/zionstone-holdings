@@ -4,6 +4,10 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import { config } from './config/env'
 import authRoutes from './routes/auth.routes'
+import propertyRoutes from './routes/property.routes'
+import bookingRoutes from './routes/booking.routes'
+import reviewRoutes from './routes/review.routes'
+
 
 const app = express()
 
@@ -14,6 +18,10 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use('/api/auth', authRoutes)
+app.use('/api/properties', propertyRoutes)
+app.use('/api/bookings', bookingRoutes)
+app.use('/api/reviews', reviewRoutes)
 
 if (config.nodeEnv === 'development') {
   app.use(morgan('dev'))

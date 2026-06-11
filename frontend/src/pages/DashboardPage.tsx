@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth.store'
-import { propertyService, Property } from '../services/property.service'
+import { propertyService,type  Property } from '../services/property.service'
 import { getPropertyPhoto } from '../utils/photos'
 import api from '../services/api'
 
