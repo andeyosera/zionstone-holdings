@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth.store'
-import { propertyService,type  Property } from '../services/property.service'
+import { propertyService, Property } from '../services/property.service'
 import { getPropertyPhoto } from '../utils/photos'
 import api from '../services/api'
 
@@ -92,21 +92,30 @@ export default function DashboardPage() {
               {user.email} · {user.role}
             </p>
           </div>
-          {isHost && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/properties/new')}
-              className="bg-[#1A56DB] text-white px-6 py-3 rounded-xl
-                         font-semibold text-sm hover:bg-white hover:text-[#0A1F5C]
-                         transition-all shadow-md">
-              + List New Property
+              onClick={() => navigate('/profile')}
+              className="bg-white/10 text-white px-5 py-2.5 rounded-xl
+                         font-semibold text-sm hover:bg-white/20
+                         transition-all border border-white/20">
+              👤 Profile
             </button>
-          )}
+            {isHost && (
+              <button
+                onClick={() => navigate('/properties/new')}
+                className="bg-[#1A56DB] text-white px-6 py-2.5 rounded-xl
+                           font-semibold text-sm hover:bg-white hover:text-[#0A1F5C]
+                           transition-all shadow-md">
+                + List Property
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
 
-        {/* ── STATS CARDS ── */}
+        {/* ── STATS ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Total Bookings',  value: stats.total,     icon: '📅', color: 'bg-blue-50 text-blue-700' },
@@ -180,7 +189,12 @@ export default function DashboardPage() {
                                  shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                       <div className="relative h-36 overflow-hidden">
                         <img src={photo} alt={p.title}
-                          className="w-full h-full object-cover"/>
+                          className="w-full h-full object-cover"
+                          onError={e => {
+                            (e.target as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&q=80'
+                          }}
+                        />
                         <span className={`absolute top-2 right-2 text-[10px] font-bold
                                           uppercase px-2 py-1 rounded-full border ${
                           p.isPublished
@@ -192,19 +206,32 @@ export default function DashboardPage() {
                       </div>
                       <div className="p-4">
                         <p className="font-display font-semibold text-[#0A1F5C]
-                                      text-sm line-clamp-1 mb-1">{p.title}</p>
-                        <p className="text-xs text-gray-400 mb-2">
+                                      text-sm line-clamp-1 mb-1">
+                          {p.title}
+                        </p>
+                        <p className="text-xs text-gray-400 mb-3">
                           📍 {p.town} · KES {Number(p.pricePerNight).toLocaleString()}/night
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-400">
-                            {p._count?.bookings || 0} booking{p._count?.bookings !== 1 ? 's' : ''}
+                            {(p._count as any)?.bookings || 0} booking{(p._count as any)?.bookings !== 1 ? 's' : ''}
                           </span>
-                          <button
-                            onClick={() => navigate(`/properties/${p.id}`)}
-                            className="text-xs text-[#1A56DB] font-medium hover:underline">
-                            View →
-                          </button>
+                          {/* ── EDIT + VIEW BUTTONS ── */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => navigate(`/properties/${p.id}/edit`)}
+                              className="text-xs text-gray-400 font-medium
+                                         hover:text-[#1A56DB] transition-colors">
+                              ✏️ Edit
+                            </button>
+                            <span className="text-gray-200">·</span>
+                            <button
+                              onClick={() => navigate(`/properties/${p.id}`)}
+                              className="text-xs text-[#1A56DB] font-medium
+                                         hover:underline">
+                              View →
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -234,8 +261,9 @@ export default function DashboardPage() {
                 No bookings yet
               </p>
               <p className="text-gray-400 text-sm mb-5">
-                {isHost ? 'Bookings will appear here when guests book your properties'
-                        : 'Start exploring properties and make your first booking'}
+                {isHost
+                  ? 'Bookings will appear here when guests book your properties'
+                  : 'Start exploring properties and make your first booking'}
               </p>
               {!isHost && (
                 <button onClick={() => navigate('/properties')}
@@ -251,7 +279,8 @@ export default function DashboardPage() {
                 const photo = booking.property.images?.find(i => i.isCover)?.url
                   || getPropertyPhoto(booking.property.type, booking.property.id)
                 const nights = Math.ceil(
-                  (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime())
+                  (new Date(booking.checkOut).getTime() -
+                   new Date(booking.checkIn).getTime())
                   / (1000 * 60 * 60 * 24)
                 )
                 return (
@@ -259,7 +288,9 @@ export default function DashboardPage() {
                     className="bg-white rounded-2xl border border-gray-100
                                shadow-sm p-4 flex items-center gap-4
                                hover:shadow-md transition-shadow">
-                    <img src={photo} alt={booking.property.title}
+                    <img
+                      src={photo}
+                      alt={booking.property.title}
                       className="w-20 h-16 object-cover rounded-xl flex-shrink-0"
                       onError={e => {
                         (e.target as HTMLImageElement).src =
@@ -289,6 +320,13 @@ export default function DashboardPage() {
                                         ${STATUS_STYLES[booking.status]}`}>
                         {booking.status}
                       </span>
+                      <div className="mt-1.5">
+                        <button
+                          onClick={() => navigate(`/properties/${booking.property.id}`)}
+                          className="text-xs text-[#1A56DB] font-medium hover:underline">
+                          View property →
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )
