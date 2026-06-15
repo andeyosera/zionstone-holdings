@@ -59,7 +59,8 @@ export const getHostBookings = async (req: AuthenticatedRequest, res: Response):
 
 export const cancelBooking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    await BookingService.cancelBooking(req.params.id, req.user.id)
+    const bookingId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+    await BookingService.cancelBooking(bookingId, req.user.id)
     res.status(200).json({ message: 'Booking cancelled successfully' })
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -81,7 +82,8 @@ export const cancelBooking = async (req: AuthenticatedRequest, res: Response): P
 
 export const confirmBooking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const booking = await BookingService.confirmBooking(req.params.id, req.user.id)
+    const bookingId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+    const booking = await BookingService.confirmBooking(bookingId, req.user.id)
     res.status(200).json({ message: 'Booking confirmed', data: booking })
   } catch (error: unknown) {
     if (error instanceof Error && error.message === 'FORBIDDEN') {

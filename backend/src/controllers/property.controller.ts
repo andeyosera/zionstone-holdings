@@ -3,6 +3,11 @@ import { AuthenticatedRequest } from '../types/auth.types'
 import * as PropertyService from '../services/property.service'
 import { PropertyType } from '@prisma/client'
 
+const getPropertyId = (id: string | string[] | undefined): string | undefined => {
+  if (!id) return undefined
+  return Array.isArray(id) ? id[0] : id
+}
+
 export const getAllProperties = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await PropertyService.getAllProperties({
@@ -25,7 +30,13 @@ export const getAllProperties = async (req: Request, res: Response): Promise<voi
 
 export const getPropertyById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const property = await PropertyService.getPropertyById(req.params.id)
+    const propertyId = getPropertyId(req.params.id)
+    if (!propertyId) {
+      res.status(400).json({ message: 'Invalid property id' })
+      return
+    }
+
+    const property = await PropertyService.getPropertyById(propertyId)
     res.status(200).json({ data: property })
   } catch (error: unknown) {
     if (error instanceof Error && error.message === 'PROPERTY_NOT_FOUND') {
@@ -71,10 +82,15 @@ export const createProperty = async (req: AuthenticatedRequest, res: Response): 
 
 export const updateProperty = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const updated = await PropertyService.updateProperty(
-      req.params.id,
-      req.user.id,
-      req.body
+    const propertyId = getPropertyId(req.params.id)
+    if (!propertyId) {
+      res.status(400).json({ message: 'Invalid property id' })
+      return
+    }
+
+    const updated = await PropertyService.updateProperty(String(req.params.id),
+     req.user.id,
+     req.body,
     )
     res.status(200).json({ message: 'Property updated', data: updated })
   } catch (error: unknown) {
@@ -92,7 +108,7 @@ export const updateProperty = async (req: AuthenticatedRequest, res: Response): 
 
 export const deleteProperty = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    await PropertyService.deleteProperty(req.params.id, req.user.id)
+    await PropertyService.deleteProperty(String(req.params.id), req.user.id)
     res.status(200).json({ message: 'Property deleted successfully' })
   } catch (error: unknown) {
     if (error instanceof Error && error.message === 'PROPERTY_NOT_FOUND') {

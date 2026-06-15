@@ -22,3 +22,7 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Add to .gitignore
+echo ".env.production" >> .gitignore
+echo "infra/nginx/ssl/" >> .gitignore
