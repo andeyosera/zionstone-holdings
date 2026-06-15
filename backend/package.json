@@ -10,6 +10,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "postinstall": "npx prisma generate",
     "db:generate": "dotenv -e .env -- npx prisma generate",
     "db:migrate": "dotenv -e .env -- npx prisma migrate deploy",
     "db:migrate:dev": "dotenv -e .env -- npx prisma migrate dev",
