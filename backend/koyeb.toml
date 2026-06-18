@@ -1,0 +1,6 @@
+[build]
+  builder = "buildpack"
+  build_command = "npm install && npm run build && npx prisma generate"
+
+[run]
+  run_command = "npx prisma migrate deploy && node dist/server.js"
