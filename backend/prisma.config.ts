@@ -2,8 +2,10 @@ import path from 'node:path'
 import { defineConfig } from '@prisma/config'
 import * as dotenv from 'dotenv'
 
-// Explicitly load .env file — guaranteed to work on all platforms
-dotenv.config({ path: path.join(__dirname, '.env') })
+// Only load .env file in development
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: path.join(__dirname, '.env') })
+}
 
 export default defineConfig({
   earlyAccess: true,
@@ -14,10 +16,15 @@ export default defineConfig({
       const connectionString = process.env.DATABASE_URL!
 
       if (!connectionString) {
-        throw new Error('DATABASE_URL is not set in your .env file')
+        throw new Error('DATABASE_URL is not set')
       }
 
-      return new PrismaPg({ connectionString })
+      return new PrismaPg({
+        connectionString,
+        ssl: process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : false,
+      })
     },
   },
 })
