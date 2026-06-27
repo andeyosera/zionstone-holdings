@@ -1,5 +1,7 @@
 node_modules
 # Keep environment variables out of version control
 .env
+**/.env
+# NOT .env.render — we need this committed
 
 /src/generated/prisma
