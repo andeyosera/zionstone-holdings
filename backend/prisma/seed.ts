@@ -1,5 +1,4 @@
 import { PrismaClient, Role, PropertyType, BookingStatus } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 import * as dotenv from 'dotenv'
 import path from 'node:path'
@@ -7,12 +6,9 @@ import path from 'node:path'
 dotenv.config({ path: path.join(__dirname, '..', '.env') })
 
 console.log('🚀 Seed file starting...')
+console.log('📡 Connecting to:', process.env.DATABASE_URL)
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
-})
-
-const prisma = new PrismaClient({ adapter })
+const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Seeding Zionstone database...')
